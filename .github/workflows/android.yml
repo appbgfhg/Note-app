@@ -24,11 +24,27 @@ jobs:
           flutter-version: '3.13.0'
           channel: 'stable'
 
+      # এই স্টেপটি আপনার প্রোজেক্টের অভাব পূরণ করবে
+      - name: Create Flutter Project Structure
+        run: |
+          # বর্তমান ফাইলগুলো সরিয়ে রাখা
+          mkdir temp_files
+          mv lib pubspec.yaml temp_files/
+          
+          # নতুন প্রোজেক্ট তৈরি করা (যা অ্যান্ড্রয়েড ফোল্ডার তৈরি করবে)
+          flutter create --project-name my_note_app .
+          
+          # আপনার আসল ফাইলগুলো আবার ফিরিয়ে আনা
+          rm -rf lib/main.dart pubspec.yaml
+          cp temp_files/main.dart lib/main.dart
+          cp temp_files/pubspec.yaml pubspec.yaml
+          rm -rf temp_files
+
       - name: Get Dependencies
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --debug # দ্রুত বিল্ডের জন্য ডিবাগ মোড ব্যবহার করা হয়েছে
+        run: flutter build apk --debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
