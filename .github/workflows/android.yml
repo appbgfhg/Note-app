@@ -26,31 +26,40 @@ jobs:
 
       - name: Reconstruct Project and Build
         run: |
-          # ১. আপনার কোডগুলো ব্যাকআপ রাখা
+          # ১. ব্যাকআপ রাখা
           mkdir backup_dir
-          find . -name "pubspec.yaml" -exec cp {} backup_dir/ \;
-          find . -name "main.dart" -exec cp {} backup_dir/ \;
+          find . -maxdepth 1 -name "pubspec.yaml" -exec cp {} backup_dir/ \;
+          find . -maxdepth 2 -name "main.dart" -exec cp {} backup_dir/ \;
+          if [ -f "logo.jpg" ]; then cp logo.jpg backup_dir/; fi
 
-          # ২. বর্তমান ডিরেক্টরি পুরোপুরি পরিষ্কার করা (গিট বাদে)
+          # ২. ডিরেক্টরি ক্লিন
           find . -maxdepth 1 ! -name 'backup_dir' ! -name '.git' ! -name '.' -exec rm -rf {} +
 
-          # ৩. নতুন ফ্লাটার প্রোজেক্ট তৈরি করা অন্য একটি ফোল্ডারে এবং সেটি এখানে মুভ করা
+          # ৩. নতুন প্রোজেক্ট তৈরি
           flutter create --project-name my_note_app tmp_app
           cp -r tmp_app/. .
           rm -rf tmp_app
 
-          # ৪. আপনার আসল কোডগুলো বসিয়ে দেওয়া
+          # ৪. কোড ও এসেট ইনজেকশন
           cp backup_dir/pubspec.yaml ./pubspec.yaml
           cp backup_dir/main.dart ./lib/main.dart
+          if [ -f "backup_dir/logo.jpg" ]; then 
+            mkdir -p assets
+            cp backup_dir/logo.jpg assets/
+            # pubspec এ এসেট রেজিস্টার করা
+            sed i "/flutter:/a \  assets:\n    - assets/logo.jpg" pubspec.yaml
+          fi
           rm -rf backup_dir
 
-          # ৫. ডিপেন্ডেন্সি নিয়ে আসা এবং বিল্ড করা
-          flutter pub get
-          flutter build apk --debug
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: my-note-app-apk
+          name: hacker-note-app-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
 
