@@ -24,33 +24,29 @@ jobs:
           flutter-version: '3.13.0'
           channel: 'stable'
 
-      - name: Create Flutter Project Structure
+      - name: Reconstruct Project and Build
         run: |
-          # অস্থায়ী ফোল্ডার তৈরি
-          mkdir temp_dir
-          
-          # pubspec.yaml এবং মেইন ডার্ট ফাইল খুঁজে বের করে কপি করা
-          find . -name "pubspec.yaml" -exec cp {} temp_dir/ \;
-          find . -name "main.dart" -exec cp {} temp_dir/ \;
-          
-          # বর্তমান ডিরেক্টরি পরিষ্কার করা (গিট ফাইল বাদে)
-          find . -maxdepth 1 ! -name 'temp_dir' ! -name '.git' ! -name '.' -exec rm -rf {} +
-          
-          # নতুন ফ্লাটার প্রোজেক্ট তৈরি
-          flutter create --project-name my_note_app . --force
-          
-          # আপনার ফাইলগুলো সঠিক জায়গায় বসানো
-          cp temp_dir/pubspec.yaml ./pubspec.yaml
-          cp temp_dir/main.dart ./lib/main.dart
-          
-          # পরিষ্কার করা
-          rm -rf temp_dir
+          # ১. আপনার কোডগুলো ব্যাকআপ রাখা
+          mkdir backup_dir
+          find . -name "pubspec.yaml" -exec cp {} backup_dir/ \;
+          find . -name "main.dart" -exec cp {} backup_dir/ \;
 
-      - name: Get Dependencies
-        run: flutter pub get
+          # ২. বর্তমান ডিরেক্টরি পুরোপুরি পরিষ্কার করা (গিট বাদে)
+          find . -maxdepth 1 ! -name 'backup_dir' ! -name '.git' ! -name '.' -exec rm -rf {} +
 
-      - name: Build APK
-        run: flutter build apk --debug
+          # ৩. নতুন ফ্লাটার প্রোজেক্ট তৈরি করা অন্য একটি ফোল্ডারে এবং সেটি এখানে মুভ করা
+          flutter create --project-name my_note_app tmp_app
+          cp -r tmp_app/. .
+          rm -rf tmp_app
+
+          # ৪. আপনার আসল কোডগুলো বসিয়ে দেওয়া
+          cp backup_dir/pubspec.yaml ./pubspec.yaml
+          cp backup_dir/main.dart ./lib/main.dart
+          rm -rf backup_dir
+
+          # ৫. ডিপেন্ডেন্সি নিয়ে আসা এবং বিল্ড করা
+          flutter pub get
+          flutter build apk --debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
